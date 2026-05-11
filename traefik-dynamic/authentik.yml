@@ -12,6 +12,33 @@
 # Reference names from workload labels: `<name>@file`, e.g. `authentik@file`.
 
 http:
+  routers:
+    # Catch /outpost.goauthentik.io/* on ANY host before workload catch-all
+    # routers can claim it. ADR-0011 §7 promises that this path is
+    # intercepted on every protected hostname — the `authentik` forwardAuth
+    # middleware below only makes the auth-or-deny decision; the actual
+    # request still gets proxied to whatever router matched. Without this
+    # router, /outpost.goauthentik.io/sign_out passes through to the
+    # workload backend, which has no such route, and 404/500s.
+    #
+    # No middleware on this router — auth is intentionally bypassed so the
+    # sign-out flow can run unauthenticated. The outpost handles its own
+    # session-invalidation logic. Priority well above any host-only router
+    # so this wins for matching paths.
+    authentik-outpost:
+      rule: 'PathPrefix(`/outpost.goauthentik.io/`)'
+      priority: 1000
+      entryPoints:
+        - https
+      tls: {}
+      service: authentik-outpost
+
+  services:
+    authentik-outpost:
+      loadBalancer:
+        servers:
+          - url: http://server:9000
+
   middlewares:
     # Forward-auth via Authentik (domain-level mode).
     # Authentik responds with 401 + redirect when unauthenticated, or 200 +
