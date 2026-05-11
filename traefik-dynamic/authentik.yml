@@ -1,15 +1,18 @@
 # Traefik dynamic-provider middlewares for the vps-playground platform.
 #
-# NOTE: this file currently lives in the authentik repo because that's where
-# the role was first wired in. As more cross-cutting middlewares accumulate
-# here (redirect-to-https, future ones), it should probably move to the
-# platform repo. Tracked as a follow-up in vps-control-plane/docs/identity.md.
-#
 # Fetched and dropped into /data/coolify/proxy/dynamic/authentik.yml by the
-# `coolify_proxy_dynamic` Ansible role. Traefik watches that directory and
-# reloads automatically on change.
+# `coolify_proxy_dynamic` Ansible role in vps-playground/vps-control-plane.
+# Traefik watches that directory and reloads automatically on change.
 #
 # Reference names from workload labels: `<name>@file`, e.g. `authentik@file`.
+#
+# ⚠ PINNED BY SHA in vps-control-plane. Editing this file alone does NOT
+# change what runs on the VPS. After committing changes here:
+#   1. In vps-control-plane: `just bump-middleware-pin` (rewrites the SHA in
+#      ansible/inventory/group_vars/all/main.yml).
+#   2. Review the diff: `git diff ansible/inventory/group_vars/all/main.yml`.
+#   3. `just coolify` to deploy.
+# Without those steps, the VPS keeps fetching the previously-pinned commit.
 
 http:
   routers:

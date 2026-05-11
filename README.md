@@ -72,7 +72,7 @@ A workload becomes "identity-aware" by:
 
 For path-level exemptions (e.g. `/healthz`, `/.well-known/acme-challenge/`), define a second router on the same service *without* the middleware, with a higher priority and a path match.
 
-See `vps-control-plane/docs/identity.md` for the full design rationale, per-workload patterns, and exemption recipes.
+For the full design rationale, per-workload contract, and footguns: [ADR-0011 *Identity-aware ingress via Authentik forward-auth*](https://github.com/vps-playground/platform-conventions/blob/main/adr/0011-identity-aware-ingress.md) in `platform-conventions`. For deploy and operations on this specific VPS: [`vps-control-plane/docs/identity-deploy.md`](https://github.com/vps-playground/vps-control-plane/blob/main/docs/identity-deploy.md).
 
 ## Updates
 
