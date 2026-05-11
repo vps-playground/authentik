@@ -82,6 +82,11 @@ services:
     shm_size: 512mb
     volumes:
     - authentik-data:/data
+    # File-discovered blueprints: worker scans /blueprints/ on boot and on
+    # file change. Add a YAML to ./blueprints/ in this repo to onboard a
+    # workload; remove or rename to retire it (instance becomes orphaned in
+    # the Authentik UI and can be deleted there).
+    - ./blueprints:/blueprints:ro
 
 volumes:
   database:
