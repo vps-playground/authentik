@@ -1,21 +1,25 @@
-# Traefik dynamic config: forward-auth middleware backed by Authentik.
+# Traefik dynamic-provider middlewares for the vps-playground platform.
 #
-# Deployment: this file's contents need to be reachable by Coolify's Traefik
-# as a file-provider dynamic config. On the VPS, drop it into:
-#     /data/coolify/proxy/dynamic/authentik.yml
-# Traefik watches that directory and reloads automatically.
+# NOTE: this file currently lives in the authentik repo because that's where
+# the role was first wired in. As more cross-cutting middlewares accumulate
+# here (redirect-to-https, future ones), it should probably move to the
+# platform repo. Tracked as a follow-up in vps-control-plane/docs/identity.md.
 #
-# Reference name: `authentik@file` — that's what workload labels target.
+# Fetched and dropped into /data/coolify/proxy/dynamic/authentik.yml by the
+# `coolify_proxy_dynamic` Ansible role. Traefik watches that directory and
+# reloads automatically on change.
 #
-# The `address` uses the container DNS name from the Authentik compose
-# (`server`). Both Authentik and the workloads must be on Coolify's shared
-# Traefik network (default for Coolify-deployed compose apps).
+# Reference names from workload labels: `<name>@file`, e.g. `authentik@file`.
 
 http:
   middlewares:
-    # Domain-level forward-auth: protects everything that references it.
+    # Forward-auth via Authentik (domain-level mode).
     # Authentik responds with 401 + redirect when unauthenticated, or 200 +
     # X-authentik-* headers when authenticated.
+    #
+    # The `address` uses the container DNS name from the Authentik compose
+    # (`server`). Both Authentik and the workloads must share Coolify's
+    # Traefik network (Coolify attaches compose apps to it by default).
     authentik:
       forwardAuth:
         address: http://server:9000/outpost.goauthentik.io/auth/traefik
@@ -32,3 +36,11 @@ http:
           - X-authentik-meta-provider
           - X-authentik-meta-app
           - X-authentik-meta-version
+
+    # HTTP → HTTPS redirect. Used by workload HTTP-side routers so plain-port-80
+    # hits get bumped to HTTPS without Coolify having to manage per-app
+    # redirect labels.
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
