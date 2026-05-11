@@ -1,13 +1,20 @@
 # Authentik — identity provider + forward-auth for vps-playground.
 #
 # Source: https://goauthentik.io/docker-compose.yml (upstream-canonical).
-# Local deltas:
-#   - `ports:` removed on `server` — we don't want host-port exposure.
-#     Coolify routes via the shared Traefik network.
-#   - `expose:` added on `server` for ports 9000/9443 — keeps the
-#     port-advertising signal Coolify reads to build Traefik routes,
-#     without binding to host ports.
-# Everything else mirrors upstream.
+# Local deltas (intentional simplifications for our deployment shape):
+#   - `ports:` on `server` removed; `expose:` added for 9000/9443 instead.
+#     Keeps the port advertisement (Coolify reads it to build Traefik
+#     routes) without binding to host ports.
+#   - `./data` bind mount → named volume `authentik-data` on both `server`
+#     and `worker`. Docker manages ownership; avoids host-vs-container UID
+#     mismatches that crash template rendering with EACCES.
+#   - `./custom-templates` mount removed: we don't override UI templates.
+#   - `./certs` mount on `worker` removed: only used by the cert-management
+#     feature, irrelevant for the embedded outpost we use.
+#   - `/var/run/docker.sock` mount on `worker` removed: only needed to
+#     spawn Docker-based outposts (we use the embedded outpost in `server`).
+#   - `user: root` on `worker` removed: was only required for docker.sock
+#     write access, which we no longer mount.
 
 services:
   postgresql:
@@ -55,8 +62,7 @@ services:
     - "9000"
     - "9443"
     volumes:
-    - ./data:/data
-    - ./custom-templates:/templates
+    - authentik-data:/data
 
   worker:
     command: worker
@@ -74,13 +80,11 @@ services:
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.2.2}
     restart: unless-stopped
     shm_size: 512mb
-    user: root
     volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - ./data:/data
-    - ./certs:/certs
-    - ./custom-templates:/templates
+    - authentik-data:/data
 
 volumes:
   database:
+    driver: local
+  authentik-data:
     driver: local
