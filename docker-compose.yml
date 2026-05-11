@@ -82,11 +82,16 @@ services:
     shm_size: 512mb
     volumes:
     - authentik-data:/data
-    # File-discovered blueprints: worker scans /blueprints/ on boot and on
-    # file change. Add a YAML to ./blueprints/ in this repo to onboard a
+    # File-discovered blueprints: worker scans /blueprints/ recursively on
+    # boot and on file change. Mount this repo's blueprints/ as a
+    # SUBDIRECTORY (`/blueprints/workloads/`), not over `/blueprints/`
+    # itself — the image ships system blueprints at `/blueprints/default/`,
+    # `/blueprints/system/`, etc., and a mount on the parent path would
+    # shadow them, leaving the install with no default flows visible to
+    # discovery. Add a YAML to ./blueprints/ in this repo to onboard a
     # workload; remove or rename to retire it (instance becomes orphaned in
     # the Authentik UI and can be deleted there).
-    - ./blueprints:/blueprints:ro
+    - ./blueprints:/blueprints/workloads:ro
 
 volumes:
   database:
