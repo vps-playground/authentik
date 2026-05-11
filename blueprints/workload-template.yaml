@@ -1,0 +1,61 @@
+# Per-workload Authentik configuration: Provider + Application + optional
+# Group binding. Apply via UI (System → Blueprints → Create), then bind the
+# new Application to the embedded outpost manually (one UI click). See
+# blueprints/README.md.
+#
+# Before applying, replace these placeholders (search-replace):
+#   <<<WORKLOAD_SLUG>>>     e.g. myapp           (lowercase, hyphenated)
+#   <<<WORKLOAD_NAME>>>     e.g. My App          (human-readable)
+#   <<<WORKLOAD_HOST>>>     e.g. myapp.3eee17bc.nip.io
+#   <<<REQUIRED_GROUP>>>    e.g. admins          (omit if not gating by group)
+#
+# If the workload is NOT admin-gated (any signed-in user allowed), DELETE
+# the entire `policybinding` entity at the bottom of the entities list.
+
+version: 1
+metadata:
+  name: vps-playground/<<<WORKLOAD_SLUG>>>
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+
+entities:
+  # 1. Proxy Provider in forward-auth single-app mode.
+  - model: authentik_providers_proxy.proxyprovider
+    state: present
+    identifiers:
+      name: <<<WORKLOAD_SLUG>>>
+    attrs:
+      authentication_flow:
+        !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      authorization_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      external_host: https://<<<WORKLOAD_HOST>>>
+      mode: forward_single
+      # Token validity, intercept-header rules, etc. left at defaults.
+
+  # 2. Application that surfaces the Provider in the user's dashboard
+  #    and carries policy bindings.
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: <<<WORKLOAD_SLUG>>>
+    attrs:
+      name: <<<WORKLOAD_NAME>>>
+      provider:
+        !Find [authentik_providers_proxy.proxyprovider, [name, <<<WORKLOAD_SLUG>>>]]
+      meta_launch_url: https://<<<WORKLOAD_HOST>>>
+      policy_engine_mode: any
+
+  # 3. (Optional) Group binding: require membership in <<<REQUIRED_GROUP>>>
+  #    to access the Application. Delete this entity if the workload is
+  #    open to any signed-in user.
+  - model: authentik_policies.policybinding
+    state: present
+    identifiers:
+      target:
+        !Find [authentik_core.application, [slug, <<<WORKLOAD_SLUG>>>]]
+      group:
+        !Find [authentik_core.group, [name, <<<REQUIRED_GROUP>>>]]
+    attrs:
+      enabled: true
+      order: 0
