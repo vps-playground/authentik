@@ -33,6 +33,8 @@ entries:
         !Find [authentik_flows.flow, [slug, default-authentication-flow]]
       authorization_flow:
         !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
       external_host: https://solarscout.3eee17bc.nip.io
       mode: forward_single
 
