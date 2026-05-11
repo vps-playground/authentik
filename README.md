@@ -34,14 +34,15 @@ Prerequisite: a working Coolify install (see `vps-control-plane`).
 
 4. **Bootstrap admin.** Visit `https://auth.3eee17bc.nip.io/if/flow/initial-setup/` — Authentik's first-run flow lets you create the admin account.
 
-5. **Install the forward-auth middleware:**
+5. **Install the forward-auth middleware via Ansible.** The platform repo ([`vps-playground/vps-control-plane`](https://github.com/vps-playground/vps-control-plane)) ships a `coolify_proxy_dynamic` role that fetches `traefik-dynamic/authentik.yml` from this repo at the pinned ref in `ansible/inventory/group_vars/all/main.yml` and drops it into `/data/coolify/proxy/dynamic/`. From the platform repo:
 
    ```sh
-   scp traefik-dynamic/authentik.yml agr@62.238.23.188:/tmp/
-   ssh agr@62.238.23.188 'sudo mv /tmp/authentik.yml /data/coolify/proxy/dynamic/ && sudo chown root:root /data/coolify/proxy/dynamic/authentik.yml'
+   just coolify     # or: just coolify-check first
    ```
 
-   Traefik picks it up automatically (file watcher). Verify by checking Coolify → Servers → localhost → Proxy → Logs for `Adding middleware [authentik]`.
+   Traefik picks the file up automatically (file watcher). Verify in Coolify → Servers → localhost → Proxy → Logs for `Adding middleware [authentik]`.
+
+   This file is also fetchable directly at `https://raw.githubusercontent.com/vps-playground/authentik/main/traefik-dynamic/authentik.yml`. Don't deploy it by hand — the Ansible path is the only supported flow, because it's reproducible from a fresh VM.
 
 ## Configuring forward-auth in Authentik
 
