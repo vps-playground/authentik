@@ -41,10 +41,11 @@ services:
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
       AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
-      # Cookie domain — set to the parent sslip.io label for our VPS so SSO
-      # cookies are shared across all <app>.62.238.23.188.sslip.io subdomains
-      # without leaking to other sslip.io users.
-      AUTHENTIK_COOKIE_DOMAIN: ${AUTHENTIK_COOKIE_DOMAIN:-62.238.23.188.sslip.io}
+      # Cookie domain — set to the parent nip.io label for our VPS so SSO
+      # cookies are shared across all <app>.3eee17bc.nip.io subdomains
+      # without leaking to other nip.io users.
+      # `3eee17bc` is the 8-char hex encoding of the VPS IP 62.238.23.188.
+      AUTHENTIK_COOKIE_DOMAIN: ${AUTHENTIK_COOKIE_DOMAIN:-3eee17bc.nip.io}
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.2.2}
     restart: unless-stopped
     shm_size: 512mb
