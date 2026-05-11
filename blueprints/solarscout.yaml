@@ -1,0 +1,78 @@
+# Authentik blueprint for solarscout — Proxy Provider + Application +
+# group policy bindings. Per platform ADR-0011 (single-application
+# forward-auth mode).
+#
+# Auto-applied: the worker discovers this file via the /blueprints/ mount
+# (docker-compose.yml) and re-applies on every change. Status visible in
+# System → Blueprints. Source-of-truth for solarscout's identity-aware
+# ingress config.
+#
+# Manual one-click follow-up after first apply: bind the Application to the
+# embedded outpost (Outposts → embedded → Edit → Applications tab → check
+# `solarscout` → Save). Blueprints can't append to the outpost's Application
+# list without replacing it, so this stays a per-workload click.
+#
+# Prereqs: groups `solarscout-user` and `solarscout-admin` must exist in
+# Directory → Groups before this applies (the `!Find` lookups for them will
+# fail and silently roll back the whole blueprint otherwise).
+
+version: 1
+metadata:
+  name: vps-playground/solarscout
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+
+entities:
+  # 1. Proxy Provider in forward-auth single-app mode.
+  - model: authentik_providers_proxy.proxyprovider
+    state: present
+    identifiers:
+      name: solarscout
+    attrs:
+      authentication_flow:
+        !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      authorization_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      external_host: https://solarscout.3eee17bc.nip.io
+      mode: forward_single
+
+  # 2. Application surfacing the Provider in the user dashboard and
+  #    carrying the policy bindings below.
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: solarscout
+    attrs:
+      name: SolarScout
+      provider:
+        !Find [authentik_providers_proxy.proxyprovider, [name, solarscout]]
+      meta_launch_url: https://solarscout.3eee17bc.nip.io
+      # `any` = pass if ANY binding matches. With the two group bindings
+      # below, a user in either group gets through the front-door gate.
+      policy_engine_mode: any
+
+  # 3a. Front-door gate: members of `solarscout-user` may access the app.
+  - model: authentik_policies.policybinding
+    state: present
+    identifiers:
+      target:
+        !Find [authentik_core.application, [slug, solarscout]]
+      group:
+        !Find [authentik_core.group, [name, solarscout-user]]
+    attrs:
+      enabled: true
+      order: 0
+
+  # 3b. Front-door gate: members of `solarscout-admin` may access the app.
+  #     Admin-only endpoints are additionally gated in-app via
+  #     `auth.require_admin` reading X-authentik-groups.
+  - model: authentik_policies.policybinding
+    state: present
+    identifiers:
+      target:
+        !Find [authentik_core.application, [slug, solarscout]]
+      group:
+        !Find [authentik_core.group, [name, solarscout-admin]]
+    attrs:
+      enabled: true
+      order: 1

@@ -1,9 +1,8 @@
-# Per-workload Authentik configuration: Provider + Application + optional
-# Group binding. Apply via UI (System → Blueprints → Create), then bind the
-# new Application to the embedded outpost manually (one UI click). See
-# blueprints/README.md.
+# Per-workload Authentik configuration template. Copy to a sibling file in
+# this directory (e.g. `myapp.yaml`), replace the `<<<…>>>` placeholders, and
+# commit. Worker auto-applies on next file-change scan.
 #
-# Before applying, replace these placeholders (search-replace):
+# Placeholders to replace:
 #   <<<WORKLOAD_SLUG>>>     e.g. myapp           (lowercase, hyphenated)
 #   <<<WORKLOAD_NAME>>>     e.g. My App          (human-readable)
 #   <<<WORKLOAD_HOST>>>     e.g. myapp.3eee17bc.nip.io
@@ -11,12 +10,16 @@
 #
 # If the workload is NOT admin-gated (any signed-in user allowed), DELETE
 # the entire `policybinding` entity at the bottom of the entities list.
+#
+# `instantiate: false` on this template keeps Authentik from trying to apply
+# the placeholder body (which would error). Real per-workload files override
+# this to `"true"`.
 
 version: 1
 metadata:
   name: vps-playground/<<<WORKLOAD_SLUG>>>
   labels:
-    blueprints.goauthentik.io/instantiate: "true"
+    blueprints.goauthentik.io/instantiate: "false"
 
 entities:
   # 1. Proxy Provider in forward-auth single-app mode.
