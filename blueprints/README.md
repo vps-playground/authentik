@@ -6,7 +6,7 @@ Reusable Authentik blueprints for the vps-playground platform.
 
 ## How application works here
 
-This directory is **bind-mounted into the Authentik worker at `/blueprints/`** (see `docker-compose.yml`). The worker scans it on boot and on file-content change, creates a `BlueprintInstance` for each `*.yaml`, and applies it.
+This directory is **bind-mounted into the Authentik worker at `/blueprints/workloads/`** (see `docker-compose.yml`). It's a *subdirectory* mount on purpose — Authentik's image ships system blueprints at `/blueprints/default/`, `/blueprints/system/`, etc., and a parent-level mount would shadow them, leaving the install with no default flows visible to discovery. The worker scans `/blueprints/` recursively on boot and on file-content change, creates a `BlueprintInstance` for each `*.yaml`, and applies it.
 
 That means **the workflow for onboarding a new workload is:**
 
