@@ -26,13 +26,13 @@ Prerequisite: a working Coolify install (see `vps-control-plane`).
 2. **Coolify UI → New Resource → Docker Compose**:
    - Source: this repo, `main` branch
    - Compose path: `docker-compose.yml`
-   - Domain: `https://auth.62.238.23.188.sslip.io` (or your registered parent if not on sslip.io)
+   - Domain: `https://auth.3eee17bc.nip.io` (`3eee17bc` is the hex-encoded VPS IP; replace with your registered parent if you have one)
    - Target service: `server`, port `9000`
    - Environment variables: paste from `.env.example`, fill in the generated secrets
 
 3. **Deploy.** Wait for the Let's Encrypt cert. First boot runs migrations (~30s).
 
-4. **Bootstrap admin.** Visit `https://auth.62.238.23.188.sslip.io/if/flow/initial-setup/` — Authentik's first-run flow lets you create the admin account.
+4. **Bootstrap admin.** Visit `https://auth.3eee17bc.nip.io/if/flow/initial-setup/` — Authentik's first-run flow lets you create the admin account.
 
 5. **Install the forward-auth middleware:**
 
@@ -49,8 +49,8 @@ After deploy, in the Authentik admin UI:
 
 1. **Applications → Providers → Create** → *Proxy Provider*:
    - Mode: **Forward auth (domain level)**
-   - External host: `https://auth.62.238.23.188.sslip.io`
-   - Cookie domain: `62.238.23.188.sslip.io`
+   - External host: `https://auth.3eee17bc.nip.io`
+   - Cookie domain: `3eee17bc.nip.io`
 
 2. **Applications → Applications → Create** → bind to the provider above. Slug `domain-level`.
 
