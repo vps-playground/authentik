@@ -1,0 +1,34 @@
+# Traefik dynamic config: forward-auth middleware backed by Authentik.
+#
+# Deployment: this file's contents need to be reachable by Coolify's Traefik
+# as a file-provider dynamic config. On the VPS, drop it into:
+#     /data/coolify/proxy/dynamic/authentik.yml
+# Traefik watches that directory and reloads automatically.
+#
+# Reference name: `authentik@file` — that's what workload labels target.
+#
+# The `address` uses the container DNS name from the Authentik compose
+# (`server`). Both Authentik and the workloads must be on Coolify's shared
+# Traefik network (default for Coolify-deployed compose apps).
+
+http:
+  middlewares:
+    # Domain-level forward-auth: protects everything that references it.
+    # Authentik responds with 401 + redirect when unauthenticated, or 200 +
+    # X-authentik-* headers when authenticated.
+    authentik:
+      forwardAuth:
+        address: http://server:9000/outpost.goauthentik.io/auth/traefik
+        trustForwardHeader: true
+        authResponseHeaders:
+          - X-authentik-username
+          - X-authentik-groups
+          - X-authentik-email
+          - X-authentik-name
+          - X-authentik-uid
+          - X-authentik-jwt
+          - X-authentik-meta-jwks
+          - X-authentik-meta-outpost
+          - X-authentik-meta-provider
+          - X-authentik-meta-app
+          - X-authentik-meta-version
