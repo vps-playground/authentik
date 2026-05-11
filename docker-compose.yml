@@ -2,10 +2,12 @@
 #
 # Source: https://goauthentik.io/docker-compose.yml (upstream-canonical).
 # Local deltas:
-#   - `ports:` removed on `server` — Coolify routes via the shared Traefik
-#     network; no host-port exposure needed.
-# Everything else mirrors upstream. To resync: download the file and re-apply
-# the delta above (single diff).
+#   - `ports:` removed on `server` — we don't want host-port exposure.
+#     Coolify routes via the shared Traefik network.
+#   - `expose:` added on `server` for ports 9000/9443 — keeps the
+#     port-advertising signal Coolify reads to build Traefik routes,
+#     without binding to host ports.
+# Everything else mirrors upstream.
 
 services:
   postgresql:
@@ -49,6 +51,9 @@ services:
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.2.2}
     restart: unless-stopped
     shm_size: 512mb
+    expose:
+    - "9000"
+    - "9443"
     volumes:
     - ./data:/data
     - ./custom-templates:/templates
