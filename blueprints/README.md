@@ -46,7 +46,8 @@ Don't forget to flip `instantiate: "false"` → `"true"` so the worker actually 
 
 Every `!Find` reference must resolve, or the blueprint silently rolls back and the UI shows "Successful" with no `managed_models`. Common prereqs:
 
-- **Groups referenced by `policybinding` entities must exist** (Directory → Groups). Create them in the UI before pushing the workload blueprint.
+- **Groups referenced by `policybinding` entries must exist** (Directory → Groups). Create them in the UI before pushing the workload blueprint. Missing groups cause silent rollback: status "successful", `managed_models` empty, no entity-creation logs in the worker.
+- **Required fields on Proxy Providers** (Authentik 2026.x): `authentication_flow`, `authorization_flow`, **and** `invalidation_flow`. The template carries all three. Apply error if a required field is missing surfaces in the Tasks view as `Serializer errors {'<field>': [...required...]}`.
 - **Flow slugs** (`default-authentication-flow`, `default-provider-authorization-implicit-consent`) exist out of the box; only relevant if your platform install renamed them.
 
 ## Outpost binding
