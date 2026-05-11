@@ -1,6 +1,7 @@
 # Per-workload Authentik configuration template. Copy to a sibling file in
-# this directory (e.g. `myapp.yaml`), replace the `<<<…>>>` placeholders, and
-# commit. Worker auto-applies on next file-change scan.
+# this directory (e.g. `myapp.yaml`), replace the `<<<…>>>` placeholders,
+# flip `instantiate: "false"` to `"true"`, and commit. The worker
+# auto-applies on the next file-change scan.
 #
 # Placeholders to replace:
 #   <<<WORKLOAD_SLUG>>>     e.g. myapp           (lowercase, hyphenated)
@@ -9,11 +10,27 @@
 #   <<<REQUIRED_GROUP>>>    e.g. admins          (omit if not gating by group)
 #
 # If the workload is NOT admin-gated (any signed-in user allowed), DELETE
-# the entire `policybinding` entity at the bottom of the entities list.
+# the entire `policybinding` entry at the bottom of the entries list.
 #
-# `instantiate: false` on this template keeps Authentik from trying to apply
-# the placeholder body (which would error). Real per-workload files override
-# this to `"true"`.
+# Apply-time prereqs (silent-rollback footguns):
+#   - Every group referenced by a policybinding must already exist in
+#     Directory → Groups, otherwise the `!Find` resolves to null and the
+#     whole blueprint rolls back. Symptom: status "successful",
+#     managed_models empty, no entity-creation logs in the worker.
+#   - All four flow slugs (default-authentication-flow,
+#     default-provider-authorization-implicit-consent, and
+#     default-provider-invalidation-flow) ship with Authentik out of the
+#     box; only relevant if your install renamed them.
+#
+# After first apply succeeds, bind the new Application to the embedded
+# outpost manually: Outposts → embedded outpost → Edit → Applications tab
+# → check the new app → Save. Blueprints can't append to outpost
+# Application lists without replacing the whole list, so this stays a
+# one-click step per workload.
+#
+# `instantiate: "false"` on this template keeps the worker from discovering
+# the placeholder body as an applyable blueprint. Real per-workload files
+# must flip it to `"true"`.
 
 version: 1
 metadata:
@@ -52,7 +69,7 @@ entries:
       policy_engine_mode: any
 
   # 3. (Optional) Group binding: require membership in <<<REQUIRED_GROUP>>>
-  #    to access the Application. Delete this entity if the workload is
+  #    to access the Application. Delete this entry if the workload is
   #    open to any signed-in user.
   - model: authentik_policies.policybinding
     state: present
