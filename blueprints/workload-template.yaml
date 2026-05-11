@@ -32,6 +32,8 @@ entries:
         !Find [authentik_flows.flow, [slug, default-authentication-flow]]
       authorization_flow:
         !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
       external_host: https://<<<WORKLOAD_HOST>>>
       mode: forward_single
       # Token validity, intercept-header rules, etc. left at defaults.
