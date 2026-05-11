@@ -21,7 +21,7 @@ metadata:
   labels:
     blueprints.goauthentik.io/instantiate: "false"
 
-entities:
+entries:
   # 1. Proxy Provider in forward-auth single-app mode.
   - model: authentik_providers_proxy.proxyprovider
     state: present
