@@ -24,6 +24,7 @@ That's it. No UI clicks per workload (except the one-time outpost binding — se
 |---|---|
 | `workload-template.yaml` | Per-workload Provider + Application + optional Group binding. Carries `instantiate: "false"` so the placeholder body isn't discovered as an applyable blueprint. Copy to a sibling file and flip the flag to `true`. |
 | `solarscout.yaml` | Live config for the solarscout workload. First consumer of the auto-discovery path. |
+| `seriendex.yaml` | Live config for the seriendex workload. |
 
 ## Why not paste in the UI?
 
