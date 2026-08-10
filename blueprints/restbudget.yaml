@@ -1,0 +1,59 @@
+# Authentik blueprint for restbudget — Proxy Provider + Application,
+# fully open (any signed-in Authentik user can reach it). Per platform
+# ADR-0011 (single-application forward-auth mode).
+#
+# Auto-applied: the worker discovers this file via the /blueprints/ mount
+# (docker-compose.yml) and re-applies on every change. Status visible in
+# System → Blueprints. Source-of-truth for restbudget's identity-aware
+# ingress config.
+#
+# Manual one-click follow-up after first apply: bind the Application to the
+# embedded outpost (Outposts → embedded → Edit → Applications tab → check
+# `restbudget` → Save). Blueprints can't append to the outpost's Application
+# list without replacing it, so this stays a per-workload click.
+#
+# Authorization model: NO policybinding entry. Any signed-in Authentik
+# user can access restbudget; restbudget itself filters data per user via
+# X-Authentik-Uid (multi-tenant at the workload layer). If you later want
+# to restrict access to a named group, add a `policybinding` entry — see
+# solarscout.yaml for the pattern, and make sure the group exists in
+# Directory → Groups first (silent-rollback footgun otherwise).
+
+version: 1
+metadata:
+  name: vps-playground/restbudget
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+
+entries:
+  # 1. Proxy Provider in forward-auth single-app mode.
+  - model: authentik_providers_proxy.proxyprovider
+    state: present
+    identifiers:
+      name: restbudget
+    attrs:
+      authentication_flow:
+        !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      authorization_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      external_host: https://restbudget.3eee17bc.nip.io
+      mode: forward_single
+      # Token validity, intercept-header rules, etc. left at defaults.
+
+  # 2. Application surfacing the Provider in the user dashboard.
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: restbudget
+    attrs:
+      name: Restbudget
+      provider:
+        !Find [authentik_providers_proxy.proxyprovider, [name, restbudget]]
+      meta_launch_url: https://restbudget.3eee17bc.nip.io
+      meta_description: Am I going broke, or not? Pockets, routing and sinking funds.
+      # `any` = pass if ANY binding matches. With no bindings declared,
+      # the engine treats this as "no restrictions" and lets any
+      # authenticated user through.
+      policy_engine_mode: any
