@@ -1,0 +1,85 @@
+# Authentik configuration for the kaibo-saas workload.
+#
+# Two hostnames, so two Provider+Application pairs: forward-auth in
+# `forward_single` mode is per-external-host, and kaibo-saas exposes its
+# control plane and its search UI on separate hosts.
+#
+#   kaibo.3eee17bc.nip.io         → kaibo-api  (signup, dashboard, playground)
+#   search.kaibo.3eee17bc.nip.io  → kaibo-ui   (search UI)
+#
+# Not gated by group. Authentik is the perimeter here while kaibo's own user
+# management is prototype-grade, so any signed-in user is allowed; add a
+# policybinding entry (see workload-template.yaml) to narrow that later.
+#
+# NOTE: the workload's machine surfaces — /v1, /mcp and /healthz — bypass
+# forward-auth at the Traefik layer (routers without the `authentik@file`
+# middleware, per ADR-0011 §5). Nothing here affects them; /v1 authenticates
+# by API key inside the service.
+#
+# After this applies, bind BOTH Applications to the embedded outpost by hand:
+#   Applications → Outposts → `authentik Embedded Outpost` → Edit
+#   → Applications → tick `kaibo` and `kaibo-search` → Update
+# A blueprint cannot append to that list without replacing it.
+
+version: 1
+metadata:
+  name: vps-playground/kaibo
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+
+entries:
+  # ── kaibo-api: control plane -------------------------------------------
+  - model: authentik_providers_proxy.proxyprovider
+    state: present
+    identifiers:
+      name: kaibo
+    attrs:
+      authentication_flow:
+        !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      authorization_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      external_host: https://kaibo.3eee17bc.nip.io
+      mode: forward_single
+
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: kaibo
+    attrs:
+      name: Kaibo
+      provider:
+        !Find [authentik_providers_proxy.proxyprovider, [name, kaibo]]
+      meta_launch_url: https://kaibo.3eee17bc.nip.io
+      meta_description: Kaibo control plane - tenants, API keys, contribution review.
+      policy_engine_mode: any
+
+  # ── kaibo-ui: search UI -------------------------------------------------
+  # The UI has no auth of its own (the tenant API key is baked in
+  # server-side), so forward-auth is load-bearing, not defense in depth.
+  - model: authentik_providers_proxy.proxyprovider
+    state: present
+    identifiers:
+      name: kaibo-search
+    attrs:
+      authentication_flow:
+        !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      authorization_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow:
+        !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      external_host: https://search.kaibo.3eee17bc.nip.io
+      mode: forward_single
+
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: kaibo-search
+    attrs:
+      name: Kaibo Search
+      provider:
+        !Find [authentik_providers_proxy.proxyprovider, [name, kaibo-search]]
+      meta_launch_url: https://search.kaibo.3eee17bc.nip.io
+      meta_description: Human-facing search over the Kaibo knowledge backoffice.
+      policy_engine_mode: any
